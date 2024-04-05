@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="/main.css" rel="stylesheet">
+
+    <script>
+
+        function getId()
+        {
+            
+        }
+
+    </script>
+</head>
+<body class="grey-bg">
+
+    <%- include('nav.ejs') %>
+
+    <div class="white-bg">
+        <% for(let i = 0; i < post.length; i++) { %>
+            <% let addr = 'post[i]._id' %>
+            <div class="list-box">
+              <a href="/detail/<%= post[i]._id %>" ><%= post[i].title %></a>
+              <p><%= post[i].content %></p>
+            </div>
+        <% } %>
+
+    </div> 
+  
+  </body>
+</html>
