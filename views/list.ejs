@@ -5,15 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link href="/main.css" rel="stylesheet">
-
-    <script>
-
-        function getId()
-        {
-            
-        }
-
-    </script>
 </head>
 <body class="grey-bg">
 
@@ -23,12 +14,49 @@
         <% for(let i = 0; i < post.length; i++) { %>
             <% let addr = 'post[i]._id' %>
             <div class="list-box">
-              <a href="/detail/<%= post[i]._id %>" ><%= post[i].title %></a>
+              <h4><a href="/detail/<%= post[i]._id %>" ><%= post[i].title %></a></h4>
+              <span class="delete" data-id="<%= post[i]._id%>">🗑️</span>
               <p><%= post[i].content %></p>
             </div>
         <% } %>
 
     </div> 
+
+    <script>      
+        for(let i = 0; i < '<%= post.length %>'; i++)
+        {
+            document.querySelectorAll('.delete')[i]
+            .addEventListener('click', function(e){
+                fetch('/abc', {
+                    method: 'delete',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ _id: e.target.dataset.id })
+                })
+                .then((r)=>r.text())
+                .then((r)=>{console.log(r)})
+            })
+        }
+
+        // 예외처리
+        fetch('/URL')
+        .then((r) => {
+            if(r.status == 200)
+                return r.json() // Array or Object 형을 받을때 쓰는 함수
+            else
+            {
+                // 서버가 에러코드 전송시 실행할 코드
+            }
+        })
+        .then((result) => {
+            // 성공 시, 실행할 코드
+        })
+        .catch((err)=>{
+            // 인터넷 문제 등으로 실패 시, 실행할 코드
+            console.log(err);
+        })
+    </script>
   
   </body>
 </html>
