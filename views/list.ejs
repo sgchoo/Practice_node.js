@@ -35,27 +35,12 @@
                     body: JSON.stringify({ _id: e.target.dataset.id })
                 })
                 .then((r)=>r.text())
-                .then((r)=>{console.log(r)})
+                .then((r)=>{
+                    e.target.parentElement.parentElement.style.display = 'none'
+                })
             })
         }
 
-        // 예외처리
-        fetch('/URL')
-        .then((r) => {
-            if(r.status == 200)
-                return r.json() // Array or Object 형을 받을때 쓰는 함수
-            else
-            {
-                // 서버가 에러코드 전송시 실행할 코드
-            }
-        })
-        .then((result) => {
-            // 성공 시, 실행할 코드
-        })
-        .catch((err)=>{
-            // 인터넷 문제 등으로 실패 시, 실행할 코드
-            console.log(err);
-        })
     </script>
   
   </body>
