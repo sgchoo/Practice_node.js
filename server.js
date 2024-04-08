@@ -20,7 +20,7 @@ app.set('view engine', 'ejs');
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended: true}));
 
-// mongoDB
+// MongoDB
 const { MongoClient, ObjectId } = require('mongodb');
 
 let db;
@@ -36,6 +36,20 @@ new MongoClient(url).connect()
         console.log(err);
     });
 
+// login(passport and session)
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+
+app.use(passport.initialize())
+app.use(session({
+    secret: '암호화에 쓸 비번',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {maxAge: 60 * 60 * 1000}
+}));
+app.use(passport.session());
+
 // ====================================================
 // Send HTML
 // ====================================================
@@ -43,11 +57,11 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/src/index.html');
 });
 
-app.get('/list', async (req, res) => {
-    let list = await db.collection('sgchoo').find().toArray();
-    // console.log(list);
-    res.render('list.ejs', {post: list});
-});
+// app.get('/list', async (req, res) => {
+//     let list = await db.collection('sgchoo').find().toArray();
+//     // console.log(list);
+//     res.render('list.ejs', {post: list});
+// });
 
 app.get('/time', (req, res) => {
     let timeParam = new Date();
@@ -171,4 +185,80 @@ app.delete('/abc', async(req, res) => {
     {
         res.status(500).send('Delete Document Failed');
     }
+});
+
+// ==================================================
+// Pagination
+// ==================================================
+
+app.get('/list/:page', async (req, res) => {
+    let list = await db.collection('sgchoo').find().skip((req.params.page-1) * 5).limit(5).toArray();
+    res.render('list.ejs', {post: list});
+});
+
+app.get('/list/next/:id', async (req, res) => {
+    // console.log(req.params.id)
+    let list = await db.collection('sgchoo').find({ _id: { $gt: new ObjectId(req.params.id) } }).limit(5).toArray();
+    res.render('list.ejs', {post: list});
+});
+
+
+// ==================================================
+// login(session)
+// ==================================================
+
+// 제출한 아이디/비밀번호 검사하는 코드 작성하는 곳
+passport.use(new LocalStrategy(async (name, pass, cb) => {
+    let result = await db.collection('user').findOne( { username: name } );
+    if(!result)
+        return cb(null, false, { message: '일치하는 아이디 없음' });
+    if(result.password == pass)
+        return cb(null, result);
+    else
+        return cb(null, false, { message: '비밀번호 불일치' });
+}));
+
+// 쿠키 발행
+passport.serializeUser((user, done) => {
+    process.nextTick(() => {
+        done(null, { id: user._id, username: user.name });
+    });
+})
+
+
+// 요청시 오는 쿠키 분석
+passport.deserializeUser(async (user, done) => {
+    let result = await db.collection('user').findOne({ _id: new ObjectId(user.id) });
+    delete result.password;
+    process.nextTick(() => {
+        done(null, result);
+    });
+})
+
+app.get('/login', async (req, res) => {
+    res.render('login.ejs');
+});
+
+app.post('/login', async (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if(err) return res.status(500).json(err);
+        if(!user) return res.status(401).json(info.message);
+
+        req.logIn(user, () => {
+            if(err) return next(err);
+            res.redirect('/mypage');
+        });
+    })(req, res, next);
+
+});
+
+app.get('/mypage', async (req, res) => {
+    if(!req.user)
+        res.render('login.ejs');
+    else
+        res.render('mypage.ejs', {userId: req.user._id});
+});
+
+app.get('/register', (req, res) => {
+
 });

@@ -11,8 +11,8 @@
     <%- include('nav.ejs') %>
 
     <div class="white-bg">
+
         <% for(let i = 0; i < post.length; i++) { %>
-            <% let addr = 'post[i]._id' %>
             <div class="list-box">
               <h4><a href="/detail/<%= post[i]._id %>" ><%= post[i].title %></a></h4>
               <span class="delete" data-id="<%= post[i]._id%>">🗑️</span>
@@ -21,6 +21,8 @@
         <% } %>
 
     </div> 
+
+    <a href="/list/next/<%= post[post.length - 1]._id %>">다음</a>
 
     <script>      
         for(let i = 0; i < '<%= post.length %>'; i++)
