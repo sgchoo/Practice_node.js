@@ -13,6 +13,11 @@
     <div class="detail-bg">
         <h4 name="title"><%= title %></h4>
         <p nam="content"><%= content %></p>
+        <% if(image) { %>
+            <% for(let i = 0; i < image.length; i++) { %>
+                <img src="<%= image[i] %>">
+            <% } %>
+        <% } %>
         <button type="button"><a href="/rewrite/<%= id %>">수정</a></button>
     </div> 
   

@@ -10,11 +10,11 @@
 
     <%- include('nav.ejs') %>
 
-    <form class="form-box" action="/add" method="post" enctype="multipart/form-data">
-        <h4>글쓰기</h4>
-        <input type="text" name="title">
-        <input type="text" name="content">
-        <input type="file" name="img1" accept="image/*" multiple>
+    <form class="form-box" action="/register" method="post">
+        <h4>회원 가입</h4>
+        <input name="username">
+        <input type="password" name="password">
+        <input type="password" name="doublecheck">
         <button type="submit">전송</button>
     </form> 
   
