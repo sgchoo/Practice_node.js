@@ -41,17 +41,12 @@ app.use(express.static(__dirname + '/public'));
 // ejs (template engine)
 app.set('view engine', 'ejs');
 
-// middleware
-const bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({extended: true}));
-
 // MongoDB
-const { MongoClient, ObjectId } = require('mongodb');
+
+let { connectDB, ObjectId } = require('./database.js');
 
 let db;
-const url = process.env.DB_URL;
-new MongoClient(url).connect()
-    .then((client) => {
+connectDB.then((client) => {
     console.log('DB연결 성공');
     db = client.db('nodejs');
     app.listen(process.env.PORT, function(){
@@ -61,27 +56,11 @@ new MongoClient(url).connect()
         console.log(err);
     });
 
-// login(passport and session)
-const session = require('express-session');
-const passport = require('passport');
-const LocalStrategy = require('passport-local');
-const MongoStore = require('connect-mongo')
-
-app.use(passport.initialize())
-app.use(session({
-    secret: '암호화에 쓸 비번',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {maxAge: 60 * 60 * 1000},
-    store: MongoStore.create({
-        mongoUrl: process.env.DB_URL,
-        dbName: 'nodejs'
-    })
-}));
-app.use(passport.session());
-
-// bcrypt
-const bcrypt = require('bcrypt')
+// router
+app.use('/shop', require('./routes/shop.js'));
+app.use('/', require('./routes/login.js'));
+app.use('/', require('./routes/register.js'));
+app.use('/', require('./routes/rewrite.js'));
 
 // ====================================================
 // Send HTML
@@ -89,12 +68,6 @@ const bcrypt = require('bcrypt')
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/src/index.html');
 });
-
-// app.get('/list', async (req, res) => {
-//     let list = await db.collection('sgchoo').find().toArray();
-//     // console.log(list);
-//     res.render('list.ejs', {post: list});
-// });
 
 app.get('/time', (req, res) => {
     let timeParam = new Date();
@@ -110,7 +83,7 @@ app.get('/write', (req, res) => {
     res.render('write.ejs');
 });
 
-app.post('/add', async (req, res) => {
+app.post('/write/add', async (req, res) => {
     // 이미지 예외 처리할때 middleware로 처리하지 말고 여기에 직접하는게 좋음
     upload.array('img1')(req, res, async (err) => {
         if(err) return res.send('이미지 업로드 실패')
@@ -138,8 +111,6 @@ app.post('/add', async (req, res) => {
             res.status(500).send('서버 에러');
         }
     })
-
-    
 });
 
 // ==================================================
@@ -157,49 +128,6 @@ app.get('/detail/:id', async (req, res) => {
         else
         {
             res.render('detail.ejs', { title: result.title, content: result.content, id: req.params.id, image: result.img});
-        }
-    }
-    catch(e)
-    {
-        console.log(e);
-        res.status(404).send('invalid url')
-    }
-});
-
-// ==================================================
-// Board Rewrite
-// ==================================================
-
-app.get('/rewrite/:id', async (req, res) => {
-    try
-    {
-        const result = await db.collection('sgchoo').findOne({ _id: new ObjectId(req.params.id) });
-        if(result == null)
-            res.status(404).send('invalid url');
-        else
-            res.render('rewrite.ejs', { title: result.title, content: result.content, id: req.params.id });
-    }
-    catch(e)
-    {
-        console.log(e);
-        res.status(404).send('invalid url');
-    }
-});
-
-app.put('/rewrite/:id', async (req, res) => {
-    // await db.collection('sgchoo').updateOne({ _id: 1 }, { $inc: { like: 1 } });
-
-    try
-    {
-        if(req.body.title == '' || req.body.content == '')
-            res.send("<script>alert('수정 할 내용을 입력해 주세요.');location.href='/rewrite/:id';</script>");
-        else
-        {
-            var findDoc = { _id: new ObjectId(req.params.id) }
-            var updateSrc = { $set: { title: req.body.title, content: req.body.content } };
-
-            await db.collection('sgchoo').updateOne(findDoc, updateSrc);
-            res.redirect('/list');
         }
     }
     catch(e)
@@ -253,112 +181,9 @@ app.get('/list/next/:id', async (req, res) => {
     res.render('list.ejs', {post: list});
 });
 
-
-// ==================================================
-// login(session)
-// ==================================================
-
-function checkBlank(req, res, next)
-{
-
-    if(req.body.username == '' || req.body.password == '')
-    {
-        let redirectUrl = req.url;
-        let script = "<script>alert('아이디 또는 비밀번호를 입력해주세요.');location.href='" + redirectUrl + "';</script>";
-        return res.send(script);
-    }
-
-    next();
-}
-
-// 제출한 아이디/비밀번호 검사하는 코드 작성하는 곳
-passport.use(new LocalStrategy(async (name, pass, cb) => {
-    let result = await db.collection('user').findOne( { username: name } );
-    if(!result)
-        return cb(null, false, { message: '일치하는 아이디 없음' });
-    
-    if(await bcrypt.compare(pass, result.password))
-        return cb(null, result);
-    else
-        return cb(null, false, { message: '비밀번호 불일치' });
-}));
-
-// 쿠키 발행
-passport.serializeUser((user, done) => {
-    process.nextTick(() => {
-        done(null, { id: user._id, username: user.name });
-    });
-})
-
-
-// 요청시 오는 쿠키 분석
-passport.deserializeUser(async (user, done) => {
-    let result = await db.collection('user').findOne({ _id: new ObjectId(user.id) });
-    delete result.password;
-    process.nextTick(() => {
-        done(null, result);
-    });
-})
-
-app.get('/login', async (req, res) => {
-    res.render('login.ejs');
-});
-
-app.post('/login', checkBlank, async (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-        if(err) return res.status(500).json(err);
-        if(!user) return res.status(401).json(info.message);
-
-        req.logIn(user, () => {
-            if(err) return next(err);
-            res.redirect('/list/next/');
-        });
-    })(req, res, next);
-
-});
-
-app.get('/mypage', async (req, res) => {
-    if(!req.user)
-        res.render('login.ejs');
-    else
-        res.render('mypage.ejs', {userId: req.user._id});
-});
-
-// ==================================================
-// register
-// ==================================================
-
-app.get('/register', (req, res) => {
-    res.render('register.ejs');
-});
-
-app.post('/register', checkBlank, async (req, res) => {
-
-    try
-    {
-        var nameCheck = await db.collection('user').findOne( { username: req.body.username } );
-        if(nameCheck != null)
-            res.send("<script>alert('중복된 아이디 입니다.');location.href='/register';</script>");
-    
-        else
-        {
-            if(req.body.password == req.body.doublecheck)
-            {
-                let hash = await bcrypt.hash(req.body.password, 10);
-            
-                await db.collection('user').insertOne({
-                    username: req.body.username, password: hash 
-                });
-                res.redirect('/login');
-            }
-            else
-                res.send("<script>alert('비밀번호가 일치하지 않습니다.');location.href='/register';</script>");
-        }
-    }
-    catch(e)
-    {
-        console.log(e);
-        res.status(500).send('user info create err')
-    }
-
-})
+// app.get('/mypage', async (req, res) => {
+//     if(!req.user)
+//         res.render('login.ejs');
+//     else
+//         res.render('mypage.ejs', {userId: req.user._id});
+// });
