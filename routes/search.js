@@ -2,19 +2,19 @@
 const router = require('express').Router();
 
 // MongoDB Connect
-const { connectDB, ObjectId } = require('../database.js');
+const bodyParser = require('body-parser');
+const mongo = require('../services/database.js');
 
 let db;
-connectDB
-        .then((client) => {
-            db = client.db('nodejs');
-        })
-        .catch((err) => {
-            console.log(err);
-        });
+mongo.connectDB
+    .then((client) => {
+        db = client.db('nodejs');
+    })
+    .catch((err) => {
+        console.log(err);
+    });
 
 //body-parser
-const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({extended: true}));
 
 
@@ -26,14 +26,14 @@ router.use(bodyParser.urlencoded({extended: true}));
 
 // Controller로 modularization
 
-router.post('/search', async (req, res) => {
+router.post('/search', (req, res) => {
     try
     {
         let target = req.query.val
-        let result = await db.collection('sgchoo').find( { title: target } ).toArray();
+        let result = mongo.findDocumentArray(db, 'sgchoo', { title: target });
         if(!result)
         {
-            res.send("<script>alert('입력하신 게시물이 없습니다.');location.href='/list/next';</script>");
+            res.send("<script>alert('입력한 제목의 게시물이 없습니다.');location.href='/list/next';</script>");
         }
         else
         {
@@ -46,8 +46,5 @@ router.post('/search', async (req, res) => {
         console.log(err)
     };
 });
-
-// ========================================================================================
-// ========================================================================================
 
 module.exports = router;

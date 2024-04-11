@@ -1,10 +1,9 @@
 const router = require('express').Router();
 
-// connect MongoDB
-let { connectDB, ObjectId } = require('./../database.js');
+const mongo = require('../services/database.js');
 
 let db;
-connectDB
+mongo.connectDB
     .then((client) => {
         db = client.db('nodejs');
     })
