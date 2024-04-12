@@ -32,7 +32,7 @@ mongo.connectDB
         console.log(err);
     });
 
-// router
+// Router
 app.use('/shop', require('./routes/shop.js'));
 app.use('/', require('./routes/login.js'));
 app.use('/', require('./routes/register.js'));
@@ -40,6 +40,7 @@ app.use('/', require('./routes/rewrite.js'));
 app.use('/', require('./routes/detail.js'));
 app.use('/', require('./routes/delete.js'))
 app.use('/', require('./routes/write.js'));
+app.use('/', require('./routes/search.js'));
 
 // ====================================================
 // Send HTML

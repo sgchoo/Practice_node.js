@@ -27,14 +27,21 @@ module.exports = {
 
     /** nodejs Database의 collection에서 targetObj 객체를 가지거나, 모든 document들을 반환 */
     findDocumentArray: async (db, collection, targetObj = null) => {
-        if(typeof(collection) !== 'string' || (typeof(targetObj) !== 'object' || targetObj !== null))
+        if(typeof(collection) !== 'string' || ((typeof(targetObj) !== 'object') && targetObj != null))
         {
             console.log('{findDocumentArray} collection parameter type must be String and targetObj parameter type must be Object or null');
             return null;
         }
-
-        let document = await db.collection(collection).find(targetObj).toArray();
-        return document;
+        if (targetObj != null)
+        {
+            let document = await db.collection(collection).find(targetObj).toArray();
+            return document;
+        }
+        else
+        {
+            let document = await db.collection(collection).find().toArray();
+            return document;
+        }
     },
 
     /** nodejs Database의 collection으로 insertObj 객체를 삽입 */
